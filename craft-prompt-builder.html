@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRAFT Classroom App Builder</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --ink: #2B281F;            /* Wesley dark neutral */
+    --ink-soft: #66615A;
+    --paper: #FFFFFF;          /* plenty of white space, per the guidelines */
+    --card: #FFFFFF;
+    --board: #4F2759;          /* Wesley Purple */
+    --board-deep: #3A1C42;
+    --board-tint: #F4EEF6;
+    --highlighter: #C59F40;    /* Wesley Gold */
+    --highlighter-deep: #A2814A;
+    --warn-bg: #FFEDBC;        /* Wesley highlighter tint */
+    --warn-border: #F0A54F;    /* Wesley interface orange */
+    --line: #E6E2DD;           /* lighter Wesley neutral */
+    --radius: 14px;
+    --display: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Quicksand", system-ui, sans-serif;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--body);
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible {
+    outline: 3px solid var(--highlighter);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Top-level tabs ---------- */
+  .tab-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #FFFFFF;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab-button {
+    min-height: 44px;
+    padding: 9px 18px;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  .tab-button[aria-selected="true"] {
+    background: var(--board);
+    color: #FFFFFF;
+  }
+  .tab-button:hover:not([aria-selected="true"]) {
+    background: var(--board-tint);
+    color: var(--board);
+  }
+  .tab-pane[hidden] { display: none; }
+
+  /* ---------- Header ---------- */
+  header {
+    background: var(--board-tint);
+    color: var(--ink);
+    padding: 26px 20px 74px;
+    text-align: center;
+  }
+  header h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(1.5rem, 4.5vw, 2.1rem);
+    color: var(--board);
+  }
+  header p {
+    margin-top: 6px;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ---------- Letter tiles ---------- */
+  .tiles {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: -46px auto 0;
+    max-width: 680px;
+    padding: 0 20px;
+    position: relative;
+    z-index: 2;
+  }
+  .tile {
+    width: 64px;
+    height: 72px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-bottom-width: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+  }
+  .tile .letter {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--ink-soft);
+  }
+  .tile .word {
+    font-size: 0.56rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+  .tile.active {
+    background: var(--warn-bg);
+    border-color: var(--highlighter);
+    transform: translateY(-6px);
+  }
+  .tile.active .letter, .tile.active .word { color: var(--board-deep); }
+  .tile.done { background: var(--board-tint); border-color: var(--board); }
+  .tile.done .letter, .tile.done .word { color: var(--board); }
+  .tile.done .letter::after { content: " ✓"; font-size: 0.8rem; color: var(--highlighter-deep); }
+
+  /* ---------- Main card ---------- */
+  main { max-width: 680px; margin: 22px auto 60px; padding: 0 20px; }
+  .step-card {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: var(--radius);
+    padding: 26px 24px 24px;
+    animation: rise 0.3s ease;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .step-card { animation: none; }
+    .tile { transition: none; }
+  }
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #8A6C2E;
+  }
+  .step-card h2 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.4rem;
+    margin: 4px 0 8px;
+  }
+  .why { font-size: 0.95rem; color: var(--ink-soft); margin-bottom: 20px; }
+
+  .q-label {
+    display: block;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin: 20px 0 4px;
+  }
+  .q-label:first-of-type { margin-top: 0; }
+  .q-help { font-size: 0.83rem; color: var(--ink-soft); margin-bottom: 10px; }
+  .optional {
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Chips ---------- */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .chip {
+    min-height: 44px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 2px solid var(--line);
+    background: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--ink);
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .chip.selected {
+    background: var(--board-tint);
+    border-color: var(--board);
+    color: var(--board);
+  }
+
+  /* ---------- Option cards ---------- */
+  .opts { display: grid; gap: 10px; margin-bottom: 6px; }
+  .opt {
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: #fff;
+    text-align: left;
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    min-height: 44px;
+  }
+  .opt .dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: #fff;
+    font-weight: 800;
+  }
+  .opt.selected { border-color: var(--board); background: var(--board-tint); }
+  .opt.selected .dot { background: var(--board); border-color: var(--board); }
+  .opt.selected .dot::after { content: "✓"; }
+  .opt .opt-title { font-weight: 700; font-size: 0.95rem; }
+  .opt .opt-desc { font-size: 0.85rem; color: var(--ink-soft); margin-top: 2px; }
+
+  /* ---------- Inputs ---------- */
+  textarea, input[type="text"] {
+    width: 100%;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 14px;
+    font-family: inherit;
+    font-size: 1rem;
+    background: #fff;
+    color: var(--ink);
+  }
+  textarea { min-height: 96px; resize: vertical; }
+  textarea::placeholder, input::placeholder { color: #9AA8A2; }
+
+  .stem {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--board);
+    margin-bottom: 8px;
+    font-family: var(--display);
+  }
+
+  /* ---------- Examples ---------- */
+  .examples { display: grid; gap: 10px; margin: 10px 0 6px; }
+  .example {
+    border: 1.5px solid var(--line);
+    border-left: 5px solid var(--highlighter);
+    border-radius: 10px;
+    padding: 12px 14px 10px;
+    background: #FFFCF0;
+  }
+  .example p { font-size: 0.9rem; margin-bottom: 8px; }
+  .example .use-btn {
+    min-height: 44px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 2px solid var(--board);
+    background: transparent;
+    color: var(--board);
+    font-weight: 700;
+    font-size: 0.83rem;
+  }
+  .example .use-btn:active { background: var(--board); color: #fff; }
+
+  /* ---------- Checks ---------- */
+  .checks { display: grid; gap: 10px; margin-bottom: 6px; }
+  .check {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: #fff;
+    min-height: 44px;
+  }
+  .check input {
+    width: 22px;
+    height: 22px;
+    margin-top: 2px;
+    accent-color: var(--board);
+    flex-shrink: 0;
+  }
+  .check span { font-size: 0.93rem; }
+
+  /* ---------- Heads-up notices ---------- */
+  .notices { display: grid; gap: 10px; margin-top: 10px; }
+  .notice {
+    background: var(--warn-bg);
+    border: 1.5px solid var(--warn-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.88rem;
+  }
+  .notice .n-title { font-weight: 700; margin-bottom: 2px; }
+  .notice .n-title::before { content: "💡 "; }
+  .notice .n-instead { margin-top: 6px; }
+  .notice .n-instead strong { color: var(--board); }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    gap: 12px;
+  }
+  .btn {
+    min-height: 48px;
+    padding: 12px 26px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: none;
+  }
+  .btn-primary { background: var(--board); color: #fff; }
+  .btn-primary:disabled { background: #B9C6C1; cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--ink-soft); border: 2px solid var(--line); }
+  .nudge { font-size: 0.8rem; color: var(--ink-soft); margin-top: 8px; text-align: right; }
+
+  /* ---------- Final screen ---------- */
+  .prompt-box {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-left: 5px solid var(--board);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 20px;
+    font-size: 0.92rem;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+  .final-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn-copy { background: var(--highlighter); color: var(--board-deep); }
+  .tip {
+    margin-top: 20px;
+    background: #FFFCF0;
+    border: 1.5px solid var(--line);
+    border-left: 5px solid var(--highlighter);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 0.9rem;
+  }
+  .tip strong { color: var(--board); }
+  .goodtoknow-h {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.05rem;
+    margin: 20px 0 10px;
+  }
+
+  /* ---------- Working with Claude primer (scoped to prevent collisions) ---------- */
+  #tab-primer {
+    --gold: #C59F40;
+    --gold-deep: #8A6C2E;
+    font-family: var(--body);
+    color: var(--ink);
+    background: #FFFFFF;
+    line-height: 1.55;
+    font-size: 15px;
+  }
+  #tab-primer header {
+    background: var(--board-tint);
+    padding: 30px 24px 26px;
+    text-align: center;
+  }
+  #tab-primer .eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+  }
+  #tab-primer header h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    color: var(--board);
+    margin-top: 4px;
+  }
+  #tab-primer header p {
+    color: var(--ink-soft);
+    max-width: 560px;
+    margin: 8px auto 0;
+    font-size: 0.95rem;
+  }
+  #tab-primer main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+  }
+  #tab-primer section { margin-bottom: 30px; }
+  #tab-primer h2 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--board);
+    margin-bottom: 8px;
+  }
+  #tab-primer h2 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--gold);
+    color: var(--board);
+    font-size: 0.85rem;
+    margin-right: 8px;
+    vertical-align: -3px;
+  }
+  #tab-primer p + p { margin-top: 8px; }
+  #tab-primer .callout {
+    background: #FFFCF0;
+    border: 1.5px solid var(--line);
+    border-left: 5px solid var(--gold);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 12px;
+    font-size: 0.92rem;
+  }
+  #tab-primer .callout strong { color: var(--board); }
+  #tab-primer .pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  #tab-primer .pair > div {
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.88rem;
+  }
+  #tab-primer .pair .label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  #tab-primer .pair .vague .label { color: #A05252; }
+  #tab-primer .pair .better {
+    background: var(--board-tint);
+    border-color: #D9C9E0;
+  }
+  #tab-primer .pair .better .label { color: var(--board); }
+  #tab-primer .rules {
+    background: var(--board-tint);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  #tab-primer .rules h2 { margin-bottom: 10px; }
+  #tab-primer .rules ol { padding-left: 20px; }
+  #tab-primer .rules li {
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+  }
+  #tab-primer .rules li strong { color: var(--board); }
+  #tab-primer footer {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    padding: 0 24px 40px;
+  }
+  #tab-primer footer .credit {
+    color: var(--gold-deep);
+    font-weight: 700;
+  }
+
+  @media (max-width: 480px) {
+    .tile { width: 52px; height: 62px; }
+    .tile .letter { font-size: 1.2rem; }
+    .tile .word { display: none; }
+    .step-card { padding: 20px 16px; }
+  }
+  @media (max-width: 540px) {
+    #tab-primer .pair { grid-template-columns: 1fr; }
+  }
+  @media print {
+    .tab-bar, #tab-builder { display: none !important; }
+    #tab-primer { font-size: 12px; }
+    #tab-primer header { padding: 18px; }
+    #tab-primer main { padding: 16px 0 0; }
+    #tab-primer section {
+      margin-bottom: 16px;
+      break-inside: avoid;
+    }
+    #tab-primer .rules { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="tab-bar" role="tablist" aria-label="CRAFT resources">
+  <button class="tab-button" id="tab-button-builder" type="button" role="tab" aria-selected="true" aria-controls="tab-builder" data-tab-target="tab-builder">App Builder</button>
+  <button class="tab-button" id="tab-button-primer" type="button" role="tab" aria-selected="false" aria-controls="tab-primer" data-tab-target="tab-primer" tabindex="-1">Working with Claude</button>
+</nav>
+
+<section class="tab-pane" id="tab-builder" role="tabpanel" aria-labelledby="tab-button-builder">
+<header>
+  <h1>CRAFT Classroom App Builder</h1>
+  <p>Answer five quick questions, mostly by tapping, and get a ready-to-paste prompt that has Claude build the classroom app you have in mind.</p>
+</header>
+
+<div class="tiles" id="tiles" aria-hidden="true"></div>
+
+<main>
+  <div id="stepRoot"></div>
+</main>
+</section>
+
+<section class="tab-pane" id="tab-primer" role="tabpanel" aria-labelledby="tab-button-primer" hidden>
+  <header>
+    <div class="eyebrow">Wesley College · Digital Learning Practice Team</div>
+    <h1>Working with Claude</h1>
+    <p>A 10-minute primer for staff: what Claude is, how a chat actually works, and how to get genuinely useful things out of it.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2><span class="num">1</span>What Claude is (and isn't)</h2>
+      <p>Claude is an AI you talk to by typing. It can draft, explain, translate, summarise, plan, and, the part we use most, build small interactive classroom apps from a written description. It responds to what you write the way a very capable, very fast student teacher would: eager, skilled, and entirely dependent on your instructions.</p>
+      <p>What it isn't: a search engine, a database of true facts, or a mind-reader. It writes what is <em>plausible</em>, and plausible is usually right but sometimes wrong. You stay the subject expert; Claude does the labour.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">2</span>The chat is the memory</h2>
+      <p>Inside one chat, Claude remembers everything said so far. That's why you can say "make the buttons bigger" without repeating the whole task: it knows which buttons, because the whole conversation is right there.</p>
+      <p>A new chat starts fresh. This cuts both ways: start a <strong>new chat for a new job</strong> (clean slate, no baggage), but <strong>stay in the same chat to improve something</strong>, because everything you've already fixed together stays fixed.</p>
+      <div class="callout"><strong>The most common beginner stumble:</strong> asking for changes and thinking nothing happened. Usually the app panel updated quietly, so compare against what you asked for rather than your memory of the old version. And nothing is ever lost: if a change makes things worse, just say "go back to how it was before" and Claude will restore it. If Claude only <em>talked about</em> the changes, reply "please update the app with those changes."</div>
+    </section>
+
+    <section>
+      <h2><span class="num">3</span>How to ask: specific beats polite</h2>
+      <p>Claude can't see your classroom. Tell it who the thing is for, what it should achieve, and what must be true. You never need to be brief, and you never need to be formal; you need to be concrete.</p>
+      <div class="pair">
+        <div class="vague"><span class="label">Vague</span>"Can you make a maths game for my class?"</div>
+        <div class="better"><span class="label">Specific</span>"Build a self-checking practice game for Year 2 on number bonds to 10, three difficulty levels, big friendly buttons, works on an iPad."</div>
+      </div>
+      <div class="pair">
+        <div class="vague"><span class="label">Starting over (slow)</span>"That's not right." <em>(new chat, reworded prompt, hope)</em></div>
+        <div class="better"><span class="label">Iterating (fast)</span>"Good start. Make the numbers bigger, add sound-free celebration animations, and the timer is stressful, remove it."</div>
+      </div>
+      <p style="margin-top:12px;">The second column is the whole skill. Expect two or three rounds of "change this, change that" as completely normal: that's not failure, that's the workflow.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">4</span>Classroom apps (artifacts)</h2>
+      <p>When you ask Claude to build something interactive, it appears in a panel beside the chat, ready to use immediately. It updates in place as you request changes, keeps every version so nothing is ever lost, and can be published as a link you share with students or colleagues.</p>
+      <div class="callout"><strong>Two things to remember about sharing:</strong> a published link is a snapshot, so after making changes you need to publish again for the link to update. And apps built this way work completely on their own: no logins, no internet needed, nothing saved, which is exactly why they're safe to hand to students.</div>
+      <p>The easiest way to write a great first request is the <strong>CRAFT Classroom App Builder</strong>: answer five tap-through questions and it writes the prompt for you, tuned to your year level, subject and our curriculum.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">5</span>What to expect: the good and the wobbly</h2>
+      <p><strong>Reliably excellent:</strong> drafting and rewording, differentiating a task into tiers, building interactive practice apps, generating variations, adjusting reading levels, formatting and structure.</p>
+      <p><strong>Needs your expert eye:</strong> factual content, especially specialist and senior material. Claude's questions and answers are mostly accurate but not always, and it delivers mistakes with the same confidence as correct answers. Review content like the subject expert you are, every time. Apps made through the CRAFT builder include a teacher review screen for exactly this.</p>
+    </section>
+
+    <section class="rules">
+      <h2>The five golden rules</h2>
+      <ol>
+        <li><strong>Same chat to improve, new chat for a new job.</strong></li>
+        <li><strong>Be specific:</strong> who it's for, what it should achieve, what must be true.</li>
+        <li><strong>Iterate, don't restart:</strong> say exactly what to change; two or three rounds is normal.</li>
+        <li><strong>Check the content like the expert you are:</strong> confident and correct are not the same thing.</li>
+        <li><strong>Never paste anything student-identifying:</strong> no names, photos, assessment data or reports. Describe the class ("Year 4, mixed ability"), never the child.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2><span class="num">6</span>Try it now (10 minutes)</h2>
+      <p>Open the CRAFT Classroom App Builder, tap through the five questions for something you're teaching this week, and paste the prompt into a new Claude chat. When the app appears, make three changes by just asking: one about difficulty, one about how it looks, one about wording. You'll have felt the entire workflow, and you'll have something usable for class.</p>
+    </section>
+  </main>
+
+  <footer>
+    <span class="credit">Digital Learning Practice Team</span> · Questions, ideas, or a success story to show off? We'd love to hear it.
+  </footer>
+</section>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= Data ================= */
+
+  /* Subject chips follow the programme: ACARA learning areas for PYP years (Prep-Year 6), IB MYP subject groups from Year 7 */
+  var SUBJECTS_MYP = [
+    { id: "languages", name: "Language Acquisition", prompt: "Language Acquisition" },
+    { id: "english", name: "Language & Literature", prompt: "Language and Literature" },
+    { id: "isoc", name: "Individuals & Societies", prompt: "Individuals and Societies" },
+    { id: "history", name: "History", prompt: "History" },
+    { id: "geography", name: "Geography", prompt: "Geography" },
+    { id: "science", name: "Sciences", prompt: "Sciences" },
+    { id: "maths", name: "Mathematics", prompt: "Mathematics" },
+    { id: "arts", name: "Arts", prompt: "Arts" },
+    { id: "pehealth", name: "Physical & Health Ed", prompt: "Physical and Health Education" },
+    { id: "design", name: "Design", prompt: "Design" },
+    { id: "generic", name: "Other", prompt: "" }
+  ];
+  var SUBJECTS_PYP = [
+    { id: "english", name: "English", prompt: "English" },
+    { id: "maths", name: "Mathematics", prompt: "Mathematics" },
+    { id: "science", name: "Science", prompt: "Science" },
+    { id: "hass", name: "HASS", prompt: "Humanities and Social Sciences (HASS)" },
+    { id: "arts", name: "The Arts", prompt: "The Arts" },
+    { id: "design", name: "Technologies", prompt: "Technologies" },
+    { id: "pehealth", name: "Health & PE", prompt: "Health and Physical Education" },
+    { id: "languages", name: "Languages", prompt: "Languages" },
+    { id: "generic", name: "Other", prompt: "" }
+  ];
+  /* When the chip set switches, carry the selection across sensibly */
+  var CROSS_SET_MAP = { history: "hass", geography: "hass", isoc: "hass", hass: "isoc" };
+  /* Senior years (11-12) pick a programme + course instead of a subject chip */
+  var SENIOR_PROGS = [
+    { id: "vce", label: "VCE" },
+    { id: "ibdp", label: "IB Diploma" }
+  ];
+  /* MYP subject group each discipline reports under */
+  var MYP_GROUP = { maths: "Mathematics", english: "Language and Literature", science: "Sciences", isoc: "Individuals and Societies", history: "Individuals and Societies", geography: "Individuals and Societies", hass: "Individuals and Societies", languages: "Language Acquisition", pehealth: "Physical and Health Education", arts: "Arts", design: "Design", generic: "" };
+
+  var YEARS = ["Prep", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6", "Year 7", "Year 8", "Year 9", "Year 10", "Year 11", "Year 12"];
+
+  var CLASS_CHIPS = [
+    "Mixed ability",
+    "EAL/D learners",
+    "Wide range of reading levels",
+    "Students who need extra support",
+    "Students who need extending",
+    "Small group / intervention"
+  ];
+
+  /* Topic placeholder examples by subject and year band */
+  var TOPIC_EG = {
+    maths: {
+      early: "sharing a collection into equal groups",
+      primary: "fractions on a number line",
+      middle: "solving ratio problems in real-world contexts",
+      senior: "interpreting quadratic graphs"
+    },
+    english: {
+      early: "matching sounds to letters in simple words",
+      primary: "using paragraphs to organise an information report",
+      middle: "identifying persuasive techniques in advertising",
+      senior: "analysing how an author builds tension in a short story"
+    },
+    science: {
+      early: "how everyday materials change when heated or cooled",
+      primary: "what makes a bulb light up in a simple circuit",
+      middle: "predicting the effect of changing one variable in a circuit",
+      senior: "balancing chemical equations"
+    },
+    history: {
+      early: "how families celebrate special days",
+      primary: "why the First Fleet came to Australia",
+      middle: "sequencing the key events of Federation",
+      senior: "the causes of World War One"
+    },
+    geography: {
+      early: "the weather and seasons where we live",
+      primary: "features of Australian landforms",
+      middle: "measuring the liveability of our suburb",
+      senior: "how communities respond to natural hazards like bushfire"
+    },
+    isoc: {
+      early: "needs and wants in our community",
+      primary: "how local government makes decisions",
+      middle: "how supply and demand set prices",
+      senior: "how Australia's parliament makes laws"
+    },
+    hass: {
+      early: "how families celebrate special days",
+      primary: "why the First Fleet came to Australia",
+      middle: "how our local council makes decisions",
+      senior: "comparing places people live across Australia"
+    },
+    languages: {
+      early: "greetings and introducing yourself",
+      primary: "colours and classroom objects",
+      middle: "ordering food at a cafe",
+      senior: "talking about future plans and ambitions"
+    },
+    pehealth: {
+      early: "underarm throwing and catching",
+      primary: "the parts of a balanced meal",
+      middle: "designing a balanced weekly training plan",
+      senior: "how the body produces energy during exercise"
+    },
+    arts: {
+      early: "warm and cool colours in a picture",
+      primary: "creating repeating patterns with shape and colour",
+      middle: "how artists use colour to shape mood",
+      senior: "how composition guides the viewer's eye"
+    },
+    design: {
+      early: "sorting materials by what they're good for",
+      primary: "planning a simple product to solve a classroom problem",
+      middle: "evaluating a product against a design brief",
+      senior: "developing design specifications from user needs"
+    },
+    generic: {
+      early: "sorting examples from non-examples of the idea",
+      primary: "reading a simple timetable",
+      middle: "comparing two products by unit price",
+      senior: "evaluating sources for reliability"
+    }
+  };
+
+  var KEYWORDS = {
+    maths: ["math", "algebra", "fraction", "ratio", "geometry", "equation", "decimal", "percentage", "probability", "statistic", "trigonometry", "measurement", "integer", "pythagoras", "index laws", "linear", "number", "times tables"],
+    english: ["english", "writing", "reading", "novel", "poetry", "poem", "essay", "grammar", "literature", "persuasive", "narrative", "spelling", "comprehension", "sentence", "shakespeare", "vocabulary"],
+    science: ["science", "biology", "chemistry", "physics", "experiment", "cell", "forces", "energy", "ecosystem", "atom", "photosynthesis", "chemical", "circuit", "genetics", "particle", "states of matter", "body system"],
+    history: ["history", "ancient", "medieval", "federation", "colonisation", "world war", "vikings", "egypt", "rome", "gold rush", "convict"],
+    geography: ["geography", "landform", "urbanisation", "map skills", "liveability", "biome", "climate zone", "natural hazard", "population", "topographic", "fieldwork"],
+    isoc: ["individuals and societies", "i&s", "civics", "economics", "business studies", "commerce", "enterprise", "supply and demand", "parliament", "government", "citizenship"],
+    languages: ["french", "japanese", "chinese", "mandarin", "indonesian", "german", "spanish", "italian", "hebrew", "latin", "auslan"],
+    pehealth: ["fitness", "sport", "nutrition", "wellbeing", "athletics", "training plan", "netball", "basketball", "movement", "biomechanics"],
+    arts: ["visual art", "artwork", "drama", "music", "media arts", "dance", "painting", "drawing", "sculpture", "printmaking", "theatre", "instrument", "composition"],
+    design: ["design cycle", "design brief", "prototype", "cad", "3d print", "laser cut", "food tech", "textiles", "woodwork", "digital technolog", "coding", "robotics", "user needs", "product design"]
+  };
+
+  var ACTIVITY_OPTS = [
+    { id: "practice", title: "Practice set", desc: "A set of questions with instant feedback on every answer",
+      sentence: "A self-checking practice set: students answer questions one at a time and get instant feedback that explains the reasoning, not just right or wrong." },
+    { id: "walkthrough", title: "Guided walkthrough", desc: "Shows how, step by step, then hands over to the student",
+      sentence: "A guided walkthrough that models the skill step by step, then gradually fades the support so students finish independently." },
+    { id: "playground", title: "Visual playground", desc: "Students move sliders or drag things and watch what changes",
+      sentence: "A visual playground where students move sliders or drag objects and watch the result change instantly." },
+    { id: "game", title: "Game", desc: "Points, streaks or levels to add motivation",
+      sentence: "A game with points, streaks or levels that rewards accuracy and persistence." },
+    { id: "quiz", title: "Quick check-in quiz", desc: "Finds out what students already know so you can plan",
+      sentence: "A short check-in quiz that reveals what students already know and where the gaps are, with a simple summary at the end." }
+  ];
+
+  var FLEX_OPTS = [
+    { id: "tiers", title: "Tiers students choose", desc: "Support, core and extension; students pick and can switch anytime",
+      sentence: "Three difficulty tiers (support, core, extension) that students choose between and can switch at any time without losing progress." },
+    { id: "hints", title: "Hints on tap", desc: "A hint button that reveals help bit by bit, never the full answer",
+      sentence: "A hint button that reveals help in stages (a nudge, then a scaffold, then a worked example) rather than giving the answer away." },
+    { id: "auto", title: "Adjusts by itself", desc: "Gets harder after a streak of correct answers, eases off after mistakes",
+      sentence: "Difficulty adjusts automatically: a streak of correct answers moves the student up a level, and repeated mistakes offer a gentle step down." },
+    { id: "readinglevels", title: "Choice of wording", desc: "The same task with simpler or richer wording",
+      sentence: "Key questions and texts are available at two reading levels (simplified and standard) without changing the task itself." }
+  ];
+
+  var THEME_OPTS = [
+    { id: "bright", title: "Bright & playful", sentence: "Give it a bright, playful look with rounded shapes and cheerful colours." },
+    { id: "calm", title: "Calm & minimal", sentence: "Keep the look calm and minimal: plenty of white space and no visual clutter." },
+    { id: "game", title: "Game-like", sentence: "Make it feel like a game: bold colours, satisfying animations, and celebratory feedback moments." },
+    { id: "sleek", title: "Sleek & grown-up", sentence: "Give it a clean, grown-up look with sharp typography and restrained colour, nothing that older students would find babyish." },
+    { id: "wesley", title: "Wesley colours", sentence: "Use Wesley College brand colours: deep purple (#4F2759) and Wesley gold (#C59F40) as accents on a clean white background." },
+    { id: "retro", title: "Retro arcade", sentence: "Give it a retro arcade feel: pixel-style shapes and chunky buttons." }
+  ];
+
+  var TECH_CHECKS = [
+    { id: "single", text: "One single file that opens in any browser, nothing to install" },
+    { id: "touch",
+      textPyp: "Everything works by touch on an iPad, with big, easy tap targets (at least 44px)",
+      textMyp: "Works smoothly on student laptops with trackpad, mouse and keyboard (and still handles touch fine)" },
+    { id: "offline", text: "Works completely on its own: no internet needed once it's made, no logins, nothing to save" }
+  ];
+
+  var EXAMPLES = {
+    maths: {
+      r: ["Students should be able to set up and solve a proportion from a worded real-world scenario and explain their reasoning in one sentence.",
+          "Students should be able to calculate the area of composite shapes by breaking them into rectangles and triangles."],
+      a: ["Each problem gives a short real-world context like recipes or unit pricing. If the answer is wrong, the feedback shows where the working went astray.",
+          "Students drag the slider to change the gradient of a line and watch the graph update, with a challenge card asking them to hit a target."],
+      f: ["The support tier uses simpler numbers and shows a visual ratio bar to help set up each problem.",
+          "The extension tier introduces multi-step problems that combine two ratios, like currency conversion then unit pricing."],
+      t: ["Use real-world Australian contexts like supermarket prices, road trips and sport scores.",
+          "Show a summary screen at the end listing which questions were answered on which tier."]
+    },
+    english: {
+      r: ["Students should be able to identify the persuasive technique used in a sentence and explain its intended effect on the reader.",
+          "Students should be able to combine two simple sentences using a subordinating conjunction."],
+      a: ["Students drag scrambled words into order, then tap to reveal the correct sentence with the grammar rule highlighted.",
+          "Students tap words or phrases in a short paragraph to tag the techniques, and get one line of feedback on each tag."],
+      f: ["The support tier uses shorter sentences and offers a word bank; the extension tier removes the word bank and asks for an original example.",
+          "Each text can be read at a simplified or standard level without changing the questions."],
+      t: ["Let students hear any sentence read aloud with the device's built-in voice.",
+          "Keep every reading passage under 150 words so the focus stays on the skill, not stamina."]
+    },
+    science: {
+      r: ["Students should be able to label the parts of a cell and describe the job of each part in one sentence.",
+          "Students should be able to predict what happens when one variable in a simple circuit changes."],
+      a: ["Students change one variable at a time and record what happens in a built-in results table, then answer a short conclusion question.",
+          "Each quiz question targets a common misconception, and the feedback explains why the wrong answer is tempting but wrong."],
+      f: ["The support tier keeps a labelled diagram on screen to refer to; the extension tier asks students to explain a surprising result.",
+          "Hints appear in stages: first a nudge, then a diagram, then a worked explanation."],
+      t: ["Include a 'How do you know?' prompt after every prediction.",
+          "Use correct scientific units everywhere and require them in student answers."]
+    },
+    history: {
+      r: ["Students should be able to sequence the key events of Federation on a timeline and justify the placement of two of them.",
+          "Students should be able to tell a primary source from a secondary source and explain the difference."],
+      a: ["Students drag event cards into order on a timeline and get one line of feedback on each placement.",
+          "Students examine a written source with tap-to-reveal guiding questions before writing a short response."],
+      f: ["The support tier shows dates on half of the event cards; the extension tier asks students to link two events with a cause and effect.",
+          "Every text is available at two reading levels with the same questions."],
+      t: ["Include a 'How do we know this?' evidence question at the end of each section.",
+          "Use written or simply drawn sources only, nothing that needs a real photograph."]
+    },
+    geography: {
+      r: ["Students should be able to interpret a simple shaded map and draw one supported conclusion about where people live.",
+          "Students should be able to rank the liveability factors of a place and justify their top choice."],
+      a: ["Students tap regions of a simply drawn map to answer questions, with feedback that explains the pattern.",
+          "Students adjust sliders like rainfall, population and services, and watch a liveability score respond."],
+      f: ["The support tier includes a tap-to-explain legend for every map symbol; the extension tier asks students to predict before revealing the data.",
+          "Every scenario is available at two reading levels with the same data."],
+      t: ["Draw all maps as simple code-drawn shapes, no real map images needed.",
+          "Use Australian place names and contexts throughout."]
+    },
+    isoc: {
+      r: ["Students should be able to explain how a change in price affects demand, using one everyday example.",
+          "Students should be able to sort rights from responsibilities and justify two of their placements."],
+      a: ["Students make choices in a mini-economy scenario and see the flow-on effects explained after each decision.",
+          "Students sort statement cards into fact, opinion or evidence, with feedback on each choice."],
+      f: ["The support tier uses everyday scenarios like the school canteen; the extension tier introduces competing stakeholders.",
+          "Every scenario is available at two reading levels with the same questions."],
+      t: ["Frame scenarios in Australian contexts: local council, the school community, everyday prices.",
+          "Include a 'Whose perspective is missing?' question at the end of each scenario."]
+    },
+    hass: {
+      r: ["Students should be able to order key events from our local area's history and explain why one matters.",
+          "Students should be able to sort needs from wants and justify two of their choices."],
+      a: ["Students drag picture-and-caption cards onto a simple timeline, with friendly feedback on each placement.",
+          "Students explore a simply drawn map of the local area, tapping places to answer questions."],
+      f: ["The support tier pairs every card with a picture cue; the extension tier asks students to add a 'because' sentence.",
+          "Every text is available at two reading levels with the same questions."],
+      t: ["Keep sentences short and friendly for younger readers.",
+          "Use familiar contexts: our school, our suburb, our state."]
+    },
+    languages: {
+      r: ["Students should be able to match 20 food words to pictures and use five of them in a simple sentence.",
+          "Students should be able to conjugate regular present-tense verbs for every pronoun."],
+      a: ["Matching happens in stages: picture to word, then word to word, then typed recall, and missed words come back more often.",
+          "Students build a cafe conversation from phrase tiles, then swap items in and out to make it their own."],
+      f: ["The support tier shows the English meaning on tap; the extension tier hides all English and adds a trick tile to each set.",
+          "Students choose a set of 10, 20 or 30 words, and the tool repeats the ones they miss."],
+      t: ["The target language is Japanese; keep all instructions in English.",
+          "Use the device's built-in voice to read words aloud so no sound files are needed."]
+    },
+    pehealth: {
+      r: ["Students should be able to design a balanced weekly training plan that covers every fitness component.",
+          "Students should be able to spot what's missing from a meal and suggest one improvement."],
+      a: ["Students drag activity cards into a weekly planner and get instant feedback on the balance across fitness components.",
+          "Students make decisions for a fictional athlete and see the consequences play out across a season."],
+      f: ["The support tier limits choices to six clearly explained activity cards; the extension tier adds a twist like a minor injury.",
+          "Students pick their sport (netball, football, swimming) and every scenario changes to match."],
+      t: ["Use Australian sports and equipment names (netball, footy, cricket).",
+          "Make every screen usable one-handed on an iPad held upright, since students may be standing in the gym."]
+    },
+    arts: {
+      r: ["Students should be able to spot three elements of art in a picture and describe how each one shapes the mood.",
+          "Students should be able to put the steps of the printmaking process in order and explain one safety rule."],
+      a: ["Students tap regions of a simply drawn artwork to tag the elements, and get one line of feedback on each tag.",
+          "A walkthrough shows one compositional technique, then students rearrange shapes on a canvas to try it themselves."],
+      f: ["The support tier offers a word bank of arts vocabulary; the extension tier asks students to justify each choice in a full sentence.",
+          "Students choose which of three artworks to analyse, from simpler to more complex."],
+      t: ["Refer to artworks by description only, never by images that would need photo files.",
+          "All the visuals should be drawn with code, in a simple, colourful style."]
+    },
+    design: {
+      r: ["Students should be able to match real project moments to the right stage of the design cycle.",
+          "Students should be able to evaluate a product against a design brief and suggest one improvement."],
+      a: ["Students sort project scenario cards into the design cycle stage where they belong, with feedback on each choice.",
+          "Students read a short design brief, then tap which criteria a sample product meets and misses."],
+      f: ["The support tier keeps the design cycle diagram on screen; the extension tier adds scenarios that span two stages.",
+          "Students choose a project context (food, textiles, digital) and every scenario changes to match."],
+      t: ["Use MYP design cycle terminology: inquiring and analysing, developing ideas, creating the solution, evaluating.",
+          "Include a summary screen students can screenshot into their process journal."]
+    },
+    generic: {
+      r: ["Students should be able to sort examples from non-examples and justify one of their choices.",
+          "Students should be able to complete a task on their own after two guided attempts."],
+      a: ["Feedback on every answer explains the thinking, not just whether it was right or wrong.",
+          "The tool models the skill first, then hands over a little more control on each of three practice rounds."],
+      f: ["Three tiers (support, core, extension) that students can switch between at any time without losing progress.",
+          "A hint button that reveals help a bit at a time rather than giving the whole answer."],
+      t: ["Keep the reading level friendly for the year group, with short sentences.",
+          "Include a short teacher note at the end explaining how the tiers differ."]
+    }
+  };
+
+  /* ---- Things a self-contained artefact can't do, in plain language ---- */
+  var LIMITS = [
+    {
+      id: "save",
+      words: ["save", "saves", "saving", "remember", "log in", "login", "sign in", "account", "track progress", "track over", "over time", "between lessons", "next lesson", "keep a record", "record student", "records results", "portfolio"],
+      title: "It won't remember anything",
+      body: "Tools made this way forget everything the moment the tab closes. They can't save progress, keep records between lessons, or have student logins.",
+      instead: "Ask for a summary screen at the end that students can screenshot or show you before they close it."
+    },
+    {
+      id: "send",
+      words: ["email", "e-mail", "send me", "sends me", "send to me", "submit to", "send results", "send their", "notify me", "inbox"],
+      title: "It can't send you anything",
+      body: "Nothing can leave the tool: no emails, no submissions, nothing arriving in your inbox.",
+      instead: "Ask for a results screen students screenshot and share with you the way they usually would."
+    },
+    {
+      id: "internet",
+      words: ["internet", "live data", "real-time", "real time", "up to date", "current news", "today's", "weather", "stock price", "search the web", "look up online", "google", "youtube", "website", "web page", "online"],
+      title: "It can't use the internet",
+      body: "Once it's made, the tool works completely offline. It can't look anything up, show live information, or load anything from a website.",
+      instead: "Ask Claude to build in realistic example data instead. It's very good at inventing believable weather, prices, or datasets."
+    },
+    {
+      id: "media",
+      words: ["photo", "photograph", "real image", "real picture", "video", "film clip", "movie", "audio file", "sound file", "song", "music track", "recording", "mp3", "podcast", "listen to"],
+      title: "It can't include real photos, videos or sound files",
+      body: "Everything on screen has to be drawn with code, so real media files can't be built in.",
+      instead: "Ask for simple built-in graphics (Claude draws these itself), and for anything spoken, the device's built-in voice can read text aloud."
+    },
+    {
+      id: "shared",
+      words: ["leaderboard", "multiplayer", "against each other", "each other's", "whole class sees", "shared score", "compete with the class", "class leaderboard", "versus", " vs "],
+      title: "Each copy runs on its own",
+      body: "Every student's device runs its own separate copy, so students can't see each other's scores or play against each other live.",
+      instead: "Ask for a personal-best score on each device, and celebrate class results together on the board."
+    },
+    {
+      id: "brand",
+      words: ["minecraft", "pokemon", "pokémon", "disney", "mario", "fortnite", "harry potter", "bluey", "marvel", "roblox", "lego", "star wars", "barbie", "paw patrol", "taylor swift"],
+      title: "Careful with branded characters",
+      body: "Claude won't copy branded characters, worlds or logos like the ones mentioned, even for school use.",
+      instead: "Ask for 'inspired by' instead: a blocky building world, a creature-collecting quest, or a wizard school of your own invention gets the same excitement without the copying."
+    },
+    {
+      id: "ai",
+      words: ["chatbot", "chat bot", "ai feedback", "ai marks", "ai gives", "ai tutor", "ai generates", "asks claude", "claude inside", "artificial intelligence", "talks back", "answers their questions"],
+      title: "It can't think for itself",
+      body: "Making the app give AI-written responses on the fly needs technical setup, and worse: an app built that way only works for people signed in to a Claude account, so you couldn't share it with your students at all.",
+      instead: "Ask Claude to pre-write helpful feedback for every likely wrong answer while it builds the app. It's remarkably good at predicting what students will get wrong, and the finished app stays shareable with anyone."
+    }
+  ];
+
+  /* ================= State ================= */
+
+  function freshState() {
+    return {
+      step: 0,
+      years: [],
+      subject: null,
+      subjectOther: "",
+      seniorProg: null,
+      subjectWasAuto: false,
+      classChips: [],
+      topic: "",
+      contextExtra: "",
+      resultText: "",
+      activityChoice: null,
+      activityDetails: "",
+      flexChoices: [],
+      flexExtra: "",
+      techChecks: { single: true, touch: true, offline: true },
+      themeChoices: [],
+      themeText: "",
+      curriculum: "",
+      techExtra: ""
+    };
+  }
+  var state = freshState();
+
+  var STEP_META = [
+    { letter: "C", word: "Context", title: "Who is this for?", why: "The more Claude knows about your class and topic, the less generic the result. Tap what fits; type only where it asks." },
+    { letter: "R", word: "Result", title: "What will students be able to DO afterwards?", why: "Finish one sentence. This single line stops Claude building a generic explainer instead of the tool you want." },
+    { letter: "A", word: "Activity", title: "What kind of tool is it?", why: "This is the biggest lever on quality. Pick the shape that matches what you're imagining." },
+    { letter: "F", word: "Flexibility", title: "How will it work for your strongest AND your struggling students?", why: "The step most people skip, and the one that makes the tool work for a whole mixed class. Tap every one you'd like." },
+    { letter: "T", word: "Tech", title: "The reliability checklist", why: "These three are ticked for you because they make tools work in real classrooms. Alignment to the right curriculum (Australian Curriculum, or VCE/IB study designs in the senior years) happens automatically from your year level and subject." }
+  ];
+
+  /* ================= Helpers ================= */
+
+  function detectSubject(text) {
+    var lower = " " + text.toLowerCase() + " ";
+    var best = null, bestScore = 0;
+    Object.keys(KEYWORDS).forEach(function (subj) {
+      var score = 0;
+      KEYWORDS[subj].forEach(function (kw) { if (lower.indexOf(kw) !== -1) score++; });
+      if (score > bestScore) { bestScore = score; best = subj; }
+    });
+    return best;
+  }
+
+  function subjKey() { return state.subject || "generic"; }
+
+  function isPypYears() {
+    for (var i = 0; i < YEARS.length; i++) {
+      if (state.years.indexOf(YEARS[i]) !== -1) return i <= 6; /* lowest selected year is Prep-Year 6 */
+    }
+    return false; /* no year picked yet: show the MYP set */
+  }
+  function isSeniorYears() {
+    if (!state.years.length) return false;
+    for (var i = 0; i < YEARS.length; i++) {
+      if (state.years.indexOf(YEARS[i]) !== -1) return i >= 11; /* lowest selected year is Year 11 or 12: VCE / IB DP, not Australian Curriculum */
+    }
+    return false;
+  }
+  function currentSubjects() { return isPypYears() ? SUBJECTS_PYP : SUBJECTS_MYP; }
+  function subjEntry(id) {
+    var set = currentSubjects();
+    for (var i = 0; i < set.length; i++) if (set[i].id === id) return set[i];
+    return null;
+  }
+  function mapToCurrentSet(id) {
+    if (!id) return null;
+    if (subjEntry(id)) return id;
+    var mapped = CROSS_SET_MAP[id];
+    return (mapped && subjEntry(mapped)) ? mapped : null;
+  }
+  function subjPromptName() {
+    if (state.subject === "generic") return state.subjectOther.trim();
+    var e = subjEntry(subjKey());
+    return e ? e.prompt : "";
+  }
+  /* PYP years use iPads; MYP and up use laptops */
+  function checkText(c) { return c.text || (isPypYears() ? c.textPyp : c.textMyp); }
+
+  function yearsLabel() {
+    var sel = YEARS.filter(function (y) { return state.years.indexOf(y) !== -1; });
+    if (sel.length === 0) return "";
+    if (sel.length === 1) return sel[0];
+    var allYearN = sel.every(function (y) { return y.indexOf("Year ") === 0; });
+    var names = allYearN ? sel.map(function (y) { return y.replace("Year ", ""); }) : sel;
+    var joined = names.length === 2
+      ? names.join(" and ")
+      : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+    return (allYearN ? "Year " : "combined ") + joined;
+  }
+
+  function yearBand() {
+    var lowest = -1;
+    for (var i = 0; i < YEARS.length; i++) {
+      if (state.years.indexOf(YEARS[i]) !== -1) { lowest = i; break; }
+    }
+    if (lowest === -1) return "middle";
+    if (lowest <= 2) return "early";
+    if (lowest <= 6) return "primary";
+    if (lowest <= 9) return "middle";
+    return "senior";
+  }
+
+  function topicPlaceholder() {
+    return "e.g. " + TOPIC_EG[subjKey()][yearBand()];
+  }
+
+  function scanLimits(text) {
+    var lower = " " + text.toLowerCase() + " ";
+    return LIMITS.filter(function (lim) {
+      return lim.words.some(function (w) { return lower.indexOf(w) !== -1; });
+    });
+  }
+
+  function allFreeText() {
+    return [state.topic, state.contextExtra, state.resultText, state.activityDetails, state.flexExtra, state.themeText, state.techExtra].join(" \n ");
+  }
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function qLabel(text, optional, help) {
+    var frag = document.createDocumentFragment();
+    var label = el("span", "q-label", text);
+    if (optional) {
+      label.appendChild(document.createTextNode(" "));
+      label.appendChild(el("span", "optional", "(optional)"));
+    }
+    frag.appendChild(label);
+    if (help) frag.appendChild(el("p", "q-help", help));
+    return frag;
+  }
+
+  function renderNotices(container, text) {
+    container.innerHTML = "";
+    scanLimits(text).forEach(function (lim) {
+      var n = el("div", "notice");
+      n.appendChild(el("div", "n-title", lim.title));
+      n.appendChild(el("div", "n-body", lim.body));
+      var instead = el("div", "n-instead");
+      var strong = el("strong", null, "Easy fix: ");
+      instead.appendChild(strong);
+      instead.appendChild(document.createTextNode(lim.instead));
+      n.appendChild(instead);
+      container.appendChild(n);
+    });
+  }
+
+  function watchedTextarea(getValue, setValue, placeholder, minHeight) {
+    var wrap = el("div");
+    var ta = document.createElement("textarea");
+    ta.placeholder = placeholder || "";
+    ta.value = getValue();
+    if (minHeight) ta.style.minHeight = minHeight;
+    var notices = el("div", "notices");
+    ta.addEventListener("input", function () {
+      setValue(ta.value);
+      renderNotices(notices, ta.value);
+      if (wrap.onValueChange) wrap.onValueChange();
+    });
+    renderNotices(notices, getValue());
+    wrap.appendChild(ta);
+    wrap.appendChild(notices);
+    wrap.textarea = ta;
+    return wrap;
+  }
+
+  function exampleBlock(list, onUse) {
+    var wrap = el("div", "examples");
+    list.forEach(function (text) {
+      var card = el("div", "example");
+      card.appendChild(el("p", null, text));
+      var btn = el("button", "use-btn", "Use as starter");
+      btn.addEventListener("click", function () { onUse(text); });
+      card.appendChild(btn);
+      wrap.appendChild(card);
+    });
+    return wrap;
+  }
+
+  /* ================= Rendering ================= */
+
+  var tilesEl = document.getElementById("tiles");
+  var rootEl = document.getElementById("stepRoot");
+
+  function renderTiles() {
+    tilesEl.innerHTML = "";
+    STEP_META.forEach(function (s, i) {
+      var cls = "tile";
+      if (state.step < STEP_META.length) {
+        if (i === state.step) cls += " active";
+        if (i < state.step) cls += " done";
+      } else {
+        cls += " done";
+      }
+      var tile = el("div", cls);
+      tile.innerHTML = '<span class="letter">' + s.letter + '</span><span class="word">' + s.word + '</span>';
+      tilesEl.appendChild(tile);
+    });
+  }
+
+  function stepChrome(card, validate, nudgeText) {
+    var meta = STEP_META[state.step];
+    var nav = el("div", "nav");
+    var back = el("button", "btn btn-ghost", "Back");
+    back.style.visibility = state.step === 0 ? "hidden" : "visible";
+    back.addEventListener("click", function () { state.step--; render(); });
+    var next = el("button", "btn btn-primary", state.step === STEP_META.length - 1 ? "Build my prompt" : "Next");
+    function update() { next.disabled = !validate(); }
+    update();
+    next.addEventListener("click", function () { state.step++; render(); });
+    nav.appendChild(back);
+    nav.appendChild(next);
+    card.appendChild(nav);
+    if (nudgeText) card.appendChild(el("p", "nudge", nudgeText));
+    return update;
+  }
+
+  function baseCard() {
+    var meta = STEP_META[state.step];
+    var card = el("div", "step-card");
+    card.appendChild(el("div", "eyebrow", "Step " + (state.step + 1) + " of 5 · " + meta.letter + " is for " + meta.word));
+    card.appendChild(el("h2", null, meta.title));
+    card.appendChild(el("p", "why", meta.why));
+    return card;
+  }
+
+  function render() {
+    renderTiles();
+    rootEl.innerHTML = "";
+    switch (state.step) {
+      case 0: renderContext(); break;
+      case 1: renderResult(); break;
+      case 2: renderActivity(); break;
+      case 3: renderFlexibility(); break;
+      case 4: renderTech(); break;
+      default: renderFinal();
+    }
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  /* ---------- Step C ---------- */
+  function renderContext() {
+    var card = baseCard();
+    var updateNav;
+
+    // Year level (multi-select for composite classes)
+    card.appendChild(qLabel("Year level", false, "Tap more than one for a composite or multi-year class."));
+    var yearRow = el("div", "chip-row");
+    YEARS.forEach(function (y) {
+      var chip = el("button", "chip" + (state.years.indexOf(y) !== -1 ? " selected" : ""), y);
+      chip.addEventListener("click", function () {
+        var idx = state.years.indexOf(y);
+        if (idx === -1) state.years.push(y); else state.years.splice(idx, 1);
+        chip.className = "chip" + (state.years.indexOf(y) !== -1 ? " selected" : "");
+        rebuildSubjectRow();
+        updateNav();
+      });
+      yearRow.appendChild(chip);
+    });
+    card.appendChild(yearRow);
+
+    // Subject (the chip set follows the programme for the chosen years)
+    card.appendChild(qLabel("Subject"));
+    var subjHelp = el("p", "q-help", "");
+    card.appendChild(subjHelp);
+    var subjRow = el("div", "chip-row");
+    card.appendChild(subjRow);
+
+    function rebuildSubjectRow() {
+      subjRow.innerHTML = "";
+      if (!state.years.length) {
+        /* No year chosen yet: the year determines which subject list applies */
+        state.subject = null;
+        subjHelp.textContent = "Pick a year level first, and the right subject list will appear here.";
+        syncOtherBox();
+        refreshTopicEg();
+        return;
+      }
+      if (isSeniorYears()) {
+        /* Senior years: ask for the programme and exact course up front */
+        state.subject = "generic";
+        subjHelp.textContent = "Senior years: tap the programme, then name the course exactly as you'd say it.";
+        SENIOR_PROGS.forEach(function (p) {
+          var chip = el("button", "chip" + (state.seniorProg === p.id ? " selected" : ""), p.label);
+          chip.addEventListener("click", function () {
+            state.seniorProg = state.seniorProg === p.id ? null : p.id;
+            rebuildSubjectRow();
+            updateNav();
+          });
+          subjRow.appendChild(chip);
+        });
+      } else {
+        state.subject = mapToCurrentSet(state.subject);
+        subjHelp.textContent = isPypYears()
+          ? "PYP years use the Australian Curriculum learning areas."
+          : "Years 7 and up use the IB MYP subject groups.";
+        currentSubjects().forEach(function (s) {
+          var chip = el("button", "chip" + (state.subject === s.id ? " selected" : ""), s.name);
+          chip.addEventListener("click", function () {
+            state.subject = state.subject === s.id ? null : s.id;
+            state.subjectWasAuto = false;
+            rebuildSubjectRow();
+            updateNav();
+          });
+          subjRow.appendChild(chip);
+        });
+      }
+      syncOtherBox();
+      refreshTopicEg();
+    }
+
+    // Text box shown when "Other" is the chosen subject, or (in senior years) to name the course
+    var otherWrap = el("div");
+    var otherBoxMode = "";
+    function syncOtherBox() {
+      var mode = state.subject === "generic" ? (isSeniorYears() ? "course" : "other") : "none";
+      if (mode === otherBoxMode) return;
+      otherBoxMode = mode;
+      otherWrap.innerHTML = "";
+      if (mode === "none") return;
+      if (mode === "course") {
+        otherWrap.appendChild(qLabel("Which course?", false, "e.g. Physics HL, Legal Studies Units 1&2, English Language"));
+      } else {
+        otherWrap.appendChild(qLabel("What subject is it?", false, "e.g. Food Technology, Outdoor Ed, Commerce"));
+      }
+      var otherInput = document.createElement("input");
+      otherInput.type = "text";
+      otherInput.placeholder = mode === "course" ? "Type the course name" : "Type your subject";
+      otherInput.value = state.subjectOther;
+      otherInput.addEventListener("input", function () {
+        state.subjectOther = otherInput.value;
+        updateNav();
+      });
+      otherWrap.appendChild(otherInput);
+      otherInput.focus();
+    }
+    card.appendChild(otherWrap);
+
+    // Topic
+    card.appendChild(qLabel("What's the exact topic?", false, "Be specific: \"fractions on a number line\" gets a better tool than \"fractions\"."));
+    var topicWrap = el("div");
+    var topic = document.createElement("input");
+    topic.type = "text";
+    topic.value = state.topic;
+    function refreshTopicEg() { if (topic) topic.placeholder = topicPlaceholder(); }
+    rebuildSubjectRow();
+    var topicNotices = el("div", "notices");
+    topic.addEventListener("input", function () {
+      state.topic = topic.value;
+      if (state.years.length && !isSeniorYears() && (!state.subject || state.subjectWasAuto)) {
+        var guess = mapToCurrentSet(detectSubject(topic.value));
+        if (guess) { state.subject = guess; state.subjectWasAuto = true; rebuildSubjectRow(); }
+      }
+      renderNotices(topicNotices, topic.value);
+      updateNav();
+    });
+    topicWrap.appendChild(topic);
+    topicWrap.appendChild(topicNotices);
+    card.appendChild(topicWrap);
+
+    // Class chips
+    card.appendChild(qLabel("Anything true of this class?", true, "Tap all that apply. This is what makes the differentiation real."));
+    var classRow = el("div", "chip-row");
+    CLASS_CHIPS.forEach(function (c) {
+      var chip = el("button", "chip" + (state.classChips.indexOf(c) !== -1 ? " selected" : ""), c);
+      chip.addEventListener("click", function () {
+        var idx = state.classChips.indexOf(c);
+        if (idx === -1) state.classChips.push(c); else state.classChips.splice(idx, 1);
+        chip.className = "chip" + (state.classChips.indexOf(c) !== -1 ? " selected" : "");
+      });
+      classRow.appendChild(chip);
+    });
+    card.appendChild(classRow);
+
+    // Extra
+    card.appendChild(qLabel("Anything else Claude should know?", true));
+    var extra = watchedTextarea(
+      function () { return state.contextExtra; },
+      function (v) { state.contextExtra = v; },
+      "e.g. 26 students, double period, they loved the last game we used",
+      "72px"
+    );
+    card.appendChild(extra);
+
+    updateNav = stepChrome(card, function () {
+      var subjectOk = state.subject && (state.subject !== "generic" || state.subjectOther.trim() !== "");
+      return state.years.length > 0 && subjectOk && state.topic.trim() !== "";
+    }, "Needs at least one year level, a subject and a topic before you move on.");
+    rootEl.appendChild(card);
+  }
+
+  /* ---------- Step R ---------- */
+  function renderResult() {
+    var card = baseCard();
+    card.appendChild(el("p", "stem", "\u201CStudents should be able to \u2026\u201D"));
+    card.appendChild(el("p", "q-help", "Start with a doing word: solve, identify, explain, build, compare. One sentence is perfect."));
+
+    var ta = watchedTextarea(
+      function () { return state.resultText; },
+      function (v) { state.resultText = v; },
+      "e.g. set up and solve a proportion from a worded problem, and explain the reasoning in one sentence"
+    );
+    card.appendChild(ta);
+
+    card.appendChild(qLabel("Need a nudge? Two examples for " + (subjPromptName() || "your subject") + ":"));
+    card.appendChild(exampleBlock(EXAMPLES[subjKey()].r, function (text) {
+      var completion = text.replace(/^Students should be able to\s*/i, "");
+      ta.textarea.value = ta.textarea.value.trim() === "" ? completion : ta.textarea.value.trim() + "\n" + completion;
+      ta.textarea.dispatchEvent(new Event("input"));
+      ta.textarea.focus();
+    }));
+
+    var updateNav = stepChrome(card, function () { return state.resultText.trim() !== ""; });
+    ta.onValueChange = updateNav;
+    rootEl.appendChild(card);
+  }
+
+  /* ---------- Step A ---------- */
+  function renderActivity() {
+    var card = baseCard();
+    var updateNav;
+
+    var opts = el("div", "opts");
+    ACTIVITY_OPTS.forEach(function (o) {
+      var btn = el("button", "opt" + (state.activityChoice === o.id ? " selected" : ""));
+      btn.setAttribute("aria-pressed", state.activityChoice === o.id ? "true" : "false");
+      btn.appendChild(el("span", "dot"));
+      var textWrap = el("div");
+      textWrap.appendChild(el("div", "opt-title", o.title));
+      textWrap.appendChild(el("div", "opt-desc", o.desc));
+      btn.appendChild(textWrap);
+      btn.addEventListener("click", function () {
+        state.activityChoice = o.id;
+        Array.prototype.forEach.call(opts.children, function (c, i) {
+          var sel = ACTIVITY_OPTS[i].id === state.activityChoice;
+          c.className = "opt" + (sel ? " selected" : "");
+          c.setAttribute("aria-pressed", sel ? "true" : "false");
+        });
+        updateNav();
+      });
+      opts.appendChild(btn);
+    });
+    card.appendChild(opts);
+
+    card.appendChild(qLabel("Describe how you imagine it working", true, "Optional, but a sentence or two here makes a big difference."));
+    var details = watchedTextarea(
+      function () { return state.activityDetails; },
+      function (v) { state.activityDetails = v; },
+      "e.g. each question uses a recipe or shopping scenario"
+    );
+    card.appendChild(details);
+
+    card.appendChild(qLabel("Two ideas from " + (subjPromptName() || "other classrooms") + ":"));
+    card.appendChild(exampleBlock(EXAMPLES[subjKey()].a, function (text) {
+      details.textarea.value = details.textarea.value.trim() === "" ? text : details.textarea.value.trim() + "\n" + text;
+      details.textarea.dispatchEvent(new Event("input"));
+      details.textarea.focus();
+    }));
+
+    updateNav = stepChrome(card, function () { return !!state.activityChoice; }, "Tap one shape to continue.");
+    rootEl.appendChild(card);
+  }
+
+  /* ---------- Step F ---------- */
+  function renderFlexibility() {
+    var card = baseCard();
+    var updateNav;
+
+    var opts = el("div", "opts");
+    FLEX_OPTS.forEach(function (o) {
+      var selected = state.flexChoices.indexOf(o.id) !== -1;
+      var btn = el("button", "opt" + (selected ? " selected" : ""));
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
+      btn.appendChild(el("span", "dot"));
+      var textWrap = el("div");
+      textWrap.appendChild(el("div", "opt-title", o.title));
+      textWrap.appendChild(el("div", "opt-desc", o.desc));
+      btn.appendChild(textWrap);
+      btn.addEventListener("click", function () {
+        var idx = state.flexChoices.indexOf(o.id);
+        if (idx === -1) state.flexChoices.push(o.id); else state.flexChoices.splice(idx, 1);
+        var sel = state.flexChoices.indexOf(o.id) !== -1;
+        btn.className = "opt" + (sel ? " selected" : "");
+        btn.setAttribute("aria-pressed", sel ? "true" : "false");
+        updateNav();
+      });
+      opts.appendChild(btn);
+    });
+    card.appendChild(opts);
+
+    card.appendChild(qLabel("Anything else about levels or support?", true));
+    var extra = watchedTextarea(
+      function () { return state.flexExtra; },
+      function (v) { state.flexExtra = v; },
+      "e.g. the support tier should use friendlier numbers",
+      "72px"
+    );
+    card.appendChild(extra);
+
+    card.appendChild(qLabel("Two ideas from " + (subjPromptName() || "other classrooms") + ":"));
+    card.appendChild(exampleBlock(EXAMPLES[subjKey()].f, function (text) {
+      extra.textarea.value = extra.textarea.value.trim() === "" ? text : extra.textarea.value.trim() + "\n" + text;
+      extra.textarea.dispatchEvent(new Event("input"));
+      extra.textarea.focus();
+    }));
+
+    updateNav = stepChrome(card, function () { return state.flexChoices.length > 0; }, "Tap at least one, so every student in the room gets a way in.");
+    rootEl.appendChild(card);
+  }
+
+  /* ---------- Step T ---------- */
+  function renderTech() {
+    var card = baseCard();
+
+    var checks = el("div", "checks");
+    TECH_CHECKS.forEach(function (c) {
+      var lbl = el("label", "check");
+      var input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = state.techChecks[c.id];
+      input.addEventListener("change", function () { state.techChecks[c.id] = input.checked; });
+      lbl.appendChild(input);
+      lbl.appendChild(el("span", null, checkText(c)));
+      checks.appendChild(lbl);
+    });
+    card.appendChild(checks);
+
+    // Look & feel
+    card.appendChild(qLabel("Look & feel", true, "Tap any that fit. This shapes how the app looks, not what it teaches."));
+    var themeRow = el("div", "chip-row");
+    THEME_OPTS.forEach(function (o) {
+      var chip = el("button", "chip" + (state.themeChoices.indexOf(o.id) !== -1 ? " selected" : ""), o.title);
+      chip.addEventListener("click", function () {
+        var idx = state.themeChoices.indexOf(o.id);
+        if (idx === -1) state.themeChoices.push(o.id); else state.themeChoices.splice(idx, 1);
+        chip.className = "chip" + (state.themeChoices.indexOf(o.id) !== -1 ? " selected" : "");
+      });
+      themeRow.appendChild(chip);
+    });
+    card.appendChild(themeRow);
+
+    card.appendChild(qLabel("Any theme in mind?", true));
+    var theme = watchedTextarea(
+      function () { return state.themeText; },
+      function (v) { state.themeText = v; },
+      "e.g. space, under the sea, footy finals",
+      "60px"
+    );
+    card.appendChild(theme);
+
+    card.appendChild(qLabel("Already know the exact curriculum reference?", true, isSeniorYears()
+      ? "e.g. VCE Unit 1 Outcome 2, or an IB syllabus point. Totally fine to skip: the prompt automatically asks for alignment to the relevant study design."
+      : "e.g. AC9M8N05. Totally fine to skip: the prompt automatically asks for Australian Curriculum alignment based on your year level and subject."));
+    var cur = document.createElement("input");
+    cur.type = "text";
+    cur.placeholder = "AC9...";
+    cur.value = state.curriculum;
+    cur.addEventListener("input", function () { state.curriculum = cur.value; });
+    card.appendChild(cur);
+
+    card.appendChild(qLabel("Anything else that must be true?", true));
+    var extra = watchedTextarea(
+      function () { return state.techExtra; },
+      function (v) { state.techExtra = v; },
+      "e.g. friendly colours, large text, an encouraging tone",
+      "72px"
+    );
+    card.appendChild(extra);
+
+    card.appendChild(qLabel("Two ideas from " + (subjPromptName() || "other classrooms") + ":"));
+    card.appendChild(exampleBlock(EXAMPLES[subjKey()].t, function (text) {
+      extra.textarea.value = extra.textarea.value.trim() === "" ? text : extra.textarea.value.trim() + "\n" + text;
+      extra.textarea.dispatchEvent(new Event("input"));
+      extra.textarea.focus();
+    }));
+
+    stepChrome(card, function () { return true; });
+    rootEl.appendChild(card);
+  }
+
+  /* ---------- Prompt assembly ---------- */
+  function buildContextText() {
+    var parts = [];
+    var who = yearsLabel();
+    var subjName = state.subject === "generic" ? state.subjectOther.trim() : subjPromptName();
+    if (isSeniorYears() && state.seniorProg) {
+      var progLabel = state.seniorProg === "vce" ? "VCE" : "IB Diploma";
+      var already = subjName.toLowerCase().indexOf(state.seniorProg === "vce" ? "vce" : "ib") !== -1;
+      if (!already) subjName = progLabel + (subjName ? " " + subjName : "");
+    }
+    if (subjName) who += (who ? " " : "") + subjName;
+    if (who) parts.push("A " + who + " class.");
+    if (state.topic.trim()) parts.push("Topic: " + state.topic.trim() + ".");
+    if (state.classChips.length) parts.push("The class includes: " + state.classChips.map(function (c) { return c.toLowerCase(); }).join(", ") + ".");
+    if (state.contextExtra.trim()) parts.push(state.contextExtra.trim());
+    return parts.join(" ");
+  }
+
+  function buildResultText() {
+    var t = state.resultText.trim().replace(/^students should be able to\s*/i, "");
+    if (t && !/[.!?]$/.test(t)) t += ".";
+    return "Students should be able to " + t;
+  }
+
+  function buildActivityText() {
+    var opt = ACTIVITY_OPTS.filter(function (o) { return o.id === state.activityChoice; })[0];
+    var text = opt ? opt.sentence : "";
+    if (state.activityDetails.trim()) text += "\nDetails: " + state.activityDetails.trim();
+    return text;
+  }
+
+  function buildFlexText() {
+    var sentences = FLEX_OPTS
+      .filter(function (o) { return state.flexChoices.indexOf(o.id) !== -1; })
+      .map(function (o) { return o.sentence; });
+    if (state.flexExtra.trim()) sentences.push(state.flexExtra.trim());
+    return sentences.join(" ");
+  }
+
+  function buildPrompt() {
+    var constraints = TECH_CHECKS
+      .filter(function (c) { return state.techChecks[c.id]; })
+      .map(checkText);
+    constraints.push("Build it as a single self-contained HTML file with no external libraries, no internet access, and no hover-dependent interactions.");
+    var acSubj = state.subject === "generic" ? state.subjectOther.trim() : subjPromptName();
+    var acTarget = yearsLabel() + (acSubj ? " " + acSubj : "");
+    if (state.curriculum.trim()) {
+      if (isSeniorYears()) {
+        constraints.push("Align the content to " + state.curriculum.trim() + " from the relevant senior study design, matching its language and expectations, and use Australian spelling and conventions throughout.");
+      } else {
+        constraints.push("Align the content to Australian Curriculum code " + state.curriculum.trim() + ", matching its vocabulary and year-level expectations, and use Australian spelling and conventions throughout.");
+      }
+    } else if (isSeniorYears()) {
+      if (state.seniorProg === "vce") {
+        constraints.push("Align the content to the current VCAA study design for this course: its key knowledge, key skills and command terms. Do not reference the Australian Curriculum. Use Australian spelling and conventions throughout.");
+      } else if (state.seniorProg === "ibdp") {
+        constraints.push("Align the content to the current IB Diploma subject guide for this course, including its command terms and assessment objectives. Do not reference the Australian Curriculum. Use Australian spelling and conventions throughout.");
+      } else {
+        constraints.push("This is a senior secondary class, so do not reference the Australian Curriculum. If the context names VCE, align to the current VCAA study design for the subject (its key knowledge, key skills and command terms); if it names the IB Diploma, align to the relevant IB subject guide. If neither is named, follow the VCE study design. Use Australian spelling and conventions throughout.");
+      }
+    } else {
+      constraints.push("Align the content to the Australian Curriculum (Version 9) for " + acTarget + ": match its vocabulary and year-level expectations, use Australian spelling and conventions, and note the most relevant content description code(s) somewhere unobtrusive for the teacher.");
+    }
+    constraints.push("Accuracy beats quantity: include only questions and answers you are fully confident are correct, double-check every accepted answer and worked solution, and leave out anything uncertain rather than guessing.");
+    constraints.push("Include a teacher review screen that lists every question with its accepted answer(s) in one place, so a subject expert can verify all the content before class.");
+    var inMypYears = state.years.some(function (y) {
+      var i = YEARS.indexOf(y);
+      return i >= 7 && i <= 10; /* Years 7-10 */
+    });
+    if (inMypYears) {
+      var mypGroup = state.subject === "generic" ? "" : MYP_GROUP[subjKey()];
+      constraints.push("This class is part of the IB Middle Years Programme" + (mypGroup ? " (" + mypGroup + " subject group)" : "") + ": where it fits naturally, use MYP framing such as a relevant key concept and MYP command terms, without cluttering the student experience.");
+    } else if (state.years.length && isPypYears()) {
+      constraints.push("This class is part of the IB Primary Years Programme: keep the tone inquiry-friendly (wondering, exploring, reflecting rather than drill-style language), and connect to the class's unit of inquiry if one is mentioned in the topic.");
+    }
+    if (state.techExtra.trim()) constraints.push(state.techExtra.trim());
+
+    var lookBits = THEME_OPTS
+      .filter(function (o) { return state.themeChoices.indexOf(o.id) !== -1; })
+      .map(function (o) { return o.sentence; });
+    if (state.themeText.trim()) lookBits.push("Theme the visuals and scenario names around: " + state.themeText.trim() + ".");
+    var lookLine = lookBits.length ? "Look and feel: " + lookBits.join(" ") + "\n\n" : "";
+
+    return "Build an interactive classroom app for my class, as a single HTML artifact.\n\n" +
+      "Context: " + buildContextText() + "\n\n" +
+      "Learning goal: " + buildResultText() + "\n\n" +
+      "Activity type: " + buildActivityText() + "\n\n" +
+      "Differentiation: " + buildFlexText() + "\n\n" +
+      lookLine +
+      "Constraints:\n" + constraints.map(function (c) { return "- " + c; }).join("\n");
+  }
+
+  /* ---------- Final screen ---------- */
+  function renderFinal() {
+    var card = el("div", "step-card");
+    card.appendChild(el("div", "eyebrow", "You've CRAFTed it"));
+    card.appendChild(el("h2", null, "Your prompt is ready"));
+    card.appendChild(el("p", "why", "Copy this and paste it into a new chat with Claude. If the first version isn't quite right, don't start over: just tell Claude what to change, like you would with a student teacher."));
+
+    var box = el("div", "prompt-box", buildPrompt());
+    card.appendChild(box);
+
+    var actions = el("div", "final-actions");
+    var copy = el("button", "btn btn-copy", "Copy prompt");
+    copy.addEventListener("click", function () {
+      var text = buildPrompt();
+      function done() {
+        copy.textContent = "Copied ✓";
+        setTimeout(function () { copy.textContent = "Copy prompt"; }, 2000);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text, done); });
+      } else {
+        fallbackCopy(text, done);
+      }
+    });
+    var edit = el("button", "btn btn-ghost", "Back to edit");
+    edit.addEventListener("click", function () { state.step = STEP_META.length - 1; render(); });
+    var restart = el("button", "btn btn-ghost", "Start again");
+    restart.addEventListener("click", function () { state = freshState(); render(); });
+    actions.appendChild(copy);
+    actions.appendChild(edit);
+    actions.appendChild(restart);
+    card.appendChild(actions);
+
+    var triggered = scanLimits(allFreeText());
+    if (triggered.length) {
+      card.appendChild(el("div", "goodtoknow-h", "Good to know before you paste"));
+      var notices = el("div", "notices");
+      triggered.forEach(function (lim) {
+        var n = el("div", "notice");
+        n.appendChild(el("div", "n-title", lim.title));
+        n.appendChild(el("div", "n-body", lim.body));
+        var instead = el("div", "n-instead");
+        instead.appendChild(el("strong", null, "Easy fix: "));
+        instead.appendChild(document.createTextNode(lim.instead));
+        n.appendChild(instead);
+        notices.appendChild(n);
+      });
+      card.appendChild(notices);
+    }
+
+    var tip = el("div", "tip");
+    var deviceTip = isPypYears()
+      ? "open the finished app on an actual iPad and tap everything. Touch glitches are the most common problem."
+      : "open the finished app on a student laptop and click through everything in the browser your students use.";
+    tip.innerHTML = "<strong>Before you trust it in class:</strong> " + deviceTip +
+      " Then treat this first version as a draft: work through it exactly like a student would, tell Claude precisely what to change, and iterate. Two or three quick rounds is completely normal, and it's how the good classroom apps get made. And check the actual questions and answers like the subject expert you are: Claude's content is mostly accurate but not always, especially in senior specialist subjects, which is why the app includes a teacher review screen.";
+    card.appendChild(tip);
+
+    var tip2 = el("div", "tip");
+    tip2.innerHTML = "<strong>Making changes afterwards:</strong> stay in the same chat and describe what you want (\"make the numbers bigger\", \"add a level with numbers to 20\"). The app panel updates in place, and small tweaks are easy to miss. Nothing is ever lost, though: if a change makes things worse, just say \"go back to how the buttons were before\" and Claude will restore it. If Claude describes changes but the app itself doesn't look different, reply \"please update the app with those changes\", which nearly always sorts it. Starting a fresh chat with an edited prompt works too, but the same chat is usually faster because Claude remembers everything you've already fixed together.";
+    card.appendChild(tip2);
+
+    rootEl.appendChild(card);
+  }
+
+  function fallbackCopy(text, done) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { /* silent */ }
+    document.body.removeChild(ta);
+  }
+
+  function setupTabs() {
+    var tabs = document.querySelectorAll(".tab-button");
+    var panes = document.querySelectorAll(".tab-pane");
+
+    function selectTab(tab, moveFocus) {
+      var targetId = tab.getAttribute("data-tab-target");
+      Array.prototype.forEach.call(tabs, function (item) {
+        var selected = item === tab;
+        item.setAttribute("aria-selected", selected ? "true" : "false");
+        item.tabIndex = selected ? 0 : -1;
+      });
+      Array.prototype.forEach.call(panes, function (pane) {
+        pane.hidden = pane.id !== targetId;
+      });
+      if (moveFocus) tab.focus();
+    }
+
+    Array.prototype.forEach.call(tabs, function (tab, index) {
+      tab.addEventListener("click", function () { selectTab(tab, false); });
+      tab.addEventListener("keydown", function (event) {
+        var nextIndex = index;
+        if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = (index - 1 + tabs.length) % tabs.length;
+        else if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = (index + 1) % tabs.length;
+        else if (event.key === "Home") nextIndex = 0;
+        else if (event.key === "End") nextIndex = tabs.length - 1;
+        else return;
+        event.preventDefault();
+        selectTab(tabs[nextIndex], true);
+      });
+    });
+  }
+
+  setupTabs();
+  render();
+})();
+</script>
+</body>
+</html>

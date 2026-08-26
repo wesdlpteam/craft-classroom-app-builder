@@ -616,6 +616,8 @@
     { id: "english", name: "Language & Literature", prompt: "Language and Literature" },
     { id: "history", name: "History", prompt: "History" },
     { id: "geography", name: "Geography", prompt: "Geography" },
+    { id: "civics", name: "Civics & Citizenship", prompt: "Civics and Citizenship" },
+    { id: "econbus", name: "Economics & Business", prompt: "Economics and Business" },
     { id: "science", name: "Sciences", prompt: "Sciences" },
     { id: "maths", name: "Mathematics", prompt: "Mathematics" },
     { id: "arts", name: "Arts", prompt: "Arts" },
@@ -635,14 +637,14 @@
     { id: "generic", name: "Other", prompt: "" }
   ];
   /* When the chip set switches, carry the selection across sensibly */
-  var CROSS_SET_MAP = { history: "hass", geography: "hass" };
+  var CROSS_SET_MAP = { history: "hass", geography: "hass", civics: "hass", econbus: "hass" };
   /* Senior years (11-12) pick a programme + course instead of a subject chip */
   var SENIOR_PROGS = [
     { id: "vce", label: "VCE" },
     { id: "ibdp", label: "IB Diploma" }
   ];
   /* MYP subject group each discipline reports under */
-  var MYP_GROUP = { maths: "Mathematics", english: "Language and Literature", science: "Sciences", history: "Individuals and Societies", geography: "Individuals and Societies", hass: "Individuals and Societies", languages: "Language Acquisition", pehealth: "Physical and Health Education", arts: "Arts", design: "Design", generic: "" };
+  var MYP_GROUP = { maths: "Mathematics", english: "Language and Literature", science: "Sciences", history: "Individuals and Societies", geography: "Individuals and Societies", civics: "Individuals and Societies", econbus: "Individuals and Societies", hass: "Individuals and Societies", languages: "Language Acquisition", pehealth: "Physical and Health Education", arts: "Arts", design: "Design", generic: "" };
 
   var YEARS = ["Prep", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6", "Year 7", "Year 8", "Year 9", "Year 10", "Year 11", "Year 12"];
 
@@ -686,6 +688,18 @@
       primary: "features of Australian landforms",
       middle: "measuring the liveability of our suburb",
       senior: "how communities respond to natural hazards like bushfire"
+    },
+    civics: {
+      early: "rules that keep our classroom fair",
+      primary: "how local government makes decisions",
+      middle: "how Australia's parliament makes laws",
+      senior: "the role of the High Court in Australia's democracy"
+    },
+    econbus: {
+      early: "needs and wants in our community",
+      primary: "why people save and spend",
+      middle: "how supply and demand set prices",
+      senior: "how Australian businesses respond to competition"
     },
     hass: {
       early: "how families celebrate special days",
@@ -731,7 +745,9 @@
     science: ["science", "biology", "chemistry", "physics", "experiment", "cell", "forces", "energy", "ecosystem", "atom", "photosynthesis", "chemical", "circuit", "genetics", "particle", "states of matter", "body system"],
     history: ["history", "ancient", "medieval", "federation", "colonisation", "world war", "vikings", "egypt", "rome", "gold rush", "convict"],
     geography: ["geography", "landform", "urbanisation", "map skills", "liveability", "biome", "climate zone", "natural hazard", "population", "topographic", "fieldwork"],
-    hass: ["individuals and societies", "i&s", "hass", "humanities", "civics", "economics", "business studies", "commerce", "enterprise", "supply and demand", "parliament", "government", "citizenship"],
+    hass: ["individuals and societies", "i&s", "hass", "humanities"],
+    civics: ["civics", "citizenship", "parliament", "government", "democracy", "referendum", "law making", "three levels of government", "court"],
+    econbus: ["economics", "business studies", "commerce", "enterprise", "supply and demand", "entrepreneur", "financial literacy", "budgeting", "consumer"],
     languages: ["french", "japanese", "chinese", "mandarin", "indonesian", "german", "spanish", "italian", "hebrew", "latin", "auslan"],
     pehealth: ["fitness", "sport", "nutrition", "wellbeing", "athletics", "training plan", "netball", "basketball", "movement", "biomechanics"],
     arts: ["visual art", "artwork", "drama", "music", "media arts", "dance", "painting", "drawing", "sculpture", "printmaking", "theatre", "instrument", "composition"],
@@ -829,6 +845,26 @@
           "Every scenario is available at two reading levels with the same data."],
       t: ["Draw all maps as simple code-drawn shapes, no real map images needed.",
           "Use Australian place names and contexts throughout."]
+    },
+    civics: {
+      r: ["Students should be able to explain how a bill becomes a law in Australia's parliament and give one real example.",
+          "Students should be able to sort rights from responsibilities and justify two of their placements."],
+      a: ["Students guide a bill through each stage of parliament, making choices along the way and seeing the consequences explained.",
+          "Students sort statement cards into fact, opinion or evidence, with feedback on each choice."],
+      f: ["The support tier uses everyday school scenarios; the extension tier introduces competing stakeholder views.",
+          "Every scenario is available at two reading levels with the same questions."],
+      t: ["Frame scenarios in Australian contexts: parliament, local council, the school community.",
+          "Include a 'Whose perspective is missing?' question at the end of each scenario."]
+    },
+    econbus: {
+      r: ["Students should be able to explain how a change in price affects demand, using one everyday example.",
+          "Students should be able to compare two options by value for money and justify their choice."],
+      a: ["Students make choices in a mini-economy scenario and see the flow-on effects explained after each decision.",
+          "Students run a small stall over several rounds, adjusting price and stock, and watch profit respond."],
+      f: ["The support tier uses everyday scenarios like the school canteen; the extension tier introduces competing stakeholders.",
+          "Every scenario is available at two reading levels with the same questions."],
+      t: ["Use Australian contexts: supermarket prices, school fundraisers, everyday budgets.",
+          "Ask students to predict what will happen before each result is revealed."]
     },
     hass: {
       r: ["Students should be able to order key events from our local area's history and explain why one matters.",
@@ -1249,7 +1285,7 @@
         state.subject = mapToCurrentSet(state.subject);
         subjHelp.textContent = isPypYears()
           ? "PYP years use the Australian Curriculum learning areas."
-          : "Years 7 and up use the IB MYP subject groups.";
+          : "Years 7 and up use the IB MYP subject groups, with the humanities listed as their Australian Curriculum subjects.";
         currentSubjects().forEach(function (s) {
           var chip = el("button", "chip" + (state.subject === s.id ? " selected" : ""), s.name);
           chip.addEventListener("click", function () {

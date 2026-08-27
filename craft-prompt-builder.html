@@ -1016,6 +1016,20 @@
     { letter: "T", word: "Tech", title: "The reliability checklist", why: "These three are ticked for you because they make tools work in real classrooms. Alignment to the right curriculum (Australian Curriculum, or VCE/IB study designs in the senior years) happens automatically from your year level and subject." }
   ];
 
+  /* ================= Analytics ================= */
+  /* Anonymous usage counts only: no names, no topics, no typed text ever leaves the page. */
+  var ANALYTICS_URL = "https://craft-app-builder-dlp-s-projects.vercel.app/api/log";
+  function logEvent(ev) {
+    try {
+      fetch(ANALYTICS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: ev, years: state.years.join("|"), subject: state.subject || "", activity: state.activityChoice || "" }),
+        keepalive: true
+      }).catch(function () {});
+    } catch (e) { /* analytics must never break the app */ }
+  }
+
   /* ================= Helpers ================= */
 
   function detectSubject(text) {
@@ -1199,7 +1213,10 @@
     var next = el("button", "btn btn-primary", state.step === STEP_META.length - 1 ? "Build my prompt" : "Next");
     function update() { next.disabled = !validate(); }
     update();
-    next.addEventListener("click", function () { state.step++; render(); });
+    next.addEventListener("click", function () {
+      if (state.step === STEP_META.length - 1) logEvent("built");
+      state.step++; render();
+    });
     nav.appendChild(back);
     nav.appendChild(next);
     card.appendChild(nav);
@@ -1679,6 +1696,7 @@
       function done() {
         copy.textContent = "Copied ✓";
         setTimeout(function () { copy.textContent = "Copy prompt"; }, 2000);
+        logEvent("copied");
       }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text, done); });
@@ -1773,6 +1791,7 @@
 
   setupTabs();
   render();
+  logEvent("open");
 })();
 </script>
 </body>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>CRAFT App Builder — Usage</title>
+<style>
+  :root { --board: #4F2759; --gold: #C59F40; --ink: #2A2A2A; --line: #DDD5E0; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink); background: #FAF8FB; padding: 24px; max-width: 900px; margin: 0 auto; }
+  h1 { color: var(--board); font-size: 1.4rem; margin-bottom: 4px; }
+  .sub { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+  h2 { color: var(--board); font-size: 1.05rem; margin: 24px 0 8px; }
+  .cards { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .card { border: 1.5px solid var(--line); border-radius: 10px; background: #fff; padding: 14px 20px; min-width: 130px; }
+  .card .n { font-size: 1.8rem; font-weight: 700; color: var(--board); }
+  .card .l { font-size: 0.82rem; color: #666; }
+  table { border-collapse: collapse; width: 100%; background: #fff; border: 1.5px solid var(--line); border-radius: 10px; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--board); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  tr:last-child td { border-bottom: none; }
+  #login { margin-top: 40px; text-align: center; }
+  input { padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 1rem; }
+  button { padding: 10px 22px; border: none; border-radius: 999px; background: var(--board); color: #fff; font-weight: 700; font-size: 0.95rem; cursor: pointer; margin-left: 8px; }
+  .err { color: #A33; margin-top: 10px; }
+  .wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>CRAFT App Builder — Usage</h1>
+<p class="sub">Anonymous events only: page opens, prompts built, prompts copied. No names, no topics.</p>
+
+<div id="login">
+  <input id="pw" type="password" placeholder="Admin password" autocomplete="current-password">
+  <button id="go">View stats</button>
+  <p class="err" id="err" hidden>That password wasn't accepted.</p>
+</div>
+<div id="dash" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+  var login = document.getElementById("login"), dash = document.getElementById("dash"),
+      pw = document.getElementById("pw"), err = document.getElementById("err");
+
+  function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+
+  function table(title, headers, rows) {
+    var h = "<h2>" + esc(title) + "</h2><div class='wrap'><table><tr>";
+    headers.forEach(function (x) { h += "<th>" + esc(x) + "</th>"; });
+    h += "</tr>";
+    if (!rows.length) h += "<tr><td colspan='" + headers.length + "'>Nothing yet</td></tr>";
+    rows.forEach(function (r) {
+      h += "<tr>";
+      r.forEach(function (c) { h += "<td>" + esc(c) + "</td>"; });
+      h += "</tr>";
+    });
+    return h + "</table></div>";
+  }
+
+  function renderDash(d) {
+    var t = {};
+    d.totals.forEach(function (r) { t[r.event] = r.n; });
+    var h = "<div class='cards'>" +
+      "<div class='card'><div class='n'>" + (t.open || 0) + "</div><div class='l'>Page opens</div></div>" +
+      "<div class='card'><div class='n'>" + (t.built || 0) + "</div><div class='l'>Prompts built</div></div>" +
+      "<div class='card'><div class='n'>" + (t.copied || 0) + "</div><div class='l'>Prompts copied</div></div>" +
+      "</div>";
+    h += table("Last 30 days", ["Day", "Opens", "Built", "Copied"],
+      d.byDay.map(function (r) { return [r.day, r.opens, r.built, r.copied]; }));
+    h += table("Prompts built by subject", ["Subject", "Count"],
+      d.bySubject.map(function (r) { return [r.subject, r.n]; }));
+    h += table("Prompts built by year level", ["Year(s)", "Count"],
+      d.byYears.map(function (r) { return [r.years, r.n]; }));
+    h += table("Most recent 50 events", ["When (UTC)", "Event", "Year(s)", "Subject", "Activity"],
+      d.recent.map(function (r) { return [r.ts, r.event, r.years, r.subject, r.activity]; }));
+    dash.innerHTML = h;
+    login.hidden = true;
+    dash.hidden = false;
+  }
+
+  function load(password) {
+    fetch("/api/stats", { method: "POST", headers: { "x-craft-admin": password } })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (d) {
+        try { sessionStorage.setItem("craft_admin", password); } catch (_) {}
+        renderDash(d);
+      })
+      .catch(function () { err.hidden = false; });
+  }
+
+  document.getElementById("go").addEventListener("click", function () { err.hidden = true; load(pw.value); });
+  pw.addEventListener("keydown", function (e) { if (e.key === "Enter") { err.hidden = true; load(pw.value); } });
+
+  var saved = null;
+  try { saved = sessionStorage.getItem("craft_admin"); } catch (_) {}
+  if (saved) load(saved);
+})();
+</script>
+</body>
+</html>

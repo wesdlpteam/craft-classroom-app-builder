@@ -603,7 +603,7 @@
     <section>
       <h2><span class="num">5</span>What to expect: the good and the wobbly</h2>
       <p><strong>Reliably excellent:</strong> drafting and rewording, differentiating a task into tiers, building interactive practice apps, generating variations, adjusting reading levels, formatting and structure.</p>
-      <p><strong>Needs your expert eye:</strong> factual content, especially specialist and senior material. Claude's questions and answers are mostly accurate but not always, and it delivers mistakes with the same confidence as correct answers. Review content like the subject expert you are, every time. Apps made through the CRAFT builder include a teacher review screen for exactly this.</p>
+      <p><strong>Needs your expert eye:</strong> factual content, especially specialist and senior material. Claude's questions and answers are mostly accurate but not always, and it delivers mistakes with the same confidence as correct answers. Review content like the subject expert you are, every time: play through the whole app before your class does.</p>
     </section>
 
     <section class="rules">
@@ -1675,7 +1675,6 @@
       constraints.push("Align the content to the Australian Curriculum (Version 9) for " + acTarget + ": match its vocabulary and year-level expectations, use Australian spelling and conventions, and note the most relevant content description code(s) somewhere unobtrusive for the teacher.");
     }
     constraints.push("Accuracy beats quantity: include only questions and answers you are fully confident are correct, double-check every accepted answer and worked solution, and leave out anything uncertain rather than guessing.");
-    constraints.push("Include a teacher review screen that lists every question with its accepted answer(s) in one place, so a subject expert can verify all the content before class.");
     var inMypYears = state.years.some(function (y) {
       var i = YEARS.indexOf(y);
       return i >= 7 && i <= 10; /* Years 7-10 */
@@ -1759,7 +1758,7 @@
       ? "open the finished app on an actual iPad and tap everything. Touch glitches are the most common problem."
       : "open the finished app on a student laptop and click through everything in the browser your students use.";
     tip.innerHTML = "<strong>Before you trust it in class:</strong> " + deviceTip +
-      " Then treat this first version as a draft: work through it exactly like a student would, tell Claude precisely what to change, and iterate. Two or three quick rounds is completely normal, and it's how the good classroom apps get made. And check the actual questions and answers like the subject expert you are: Claude's content is mostly accurate but not always, especially in senior specialist subjects, which is why the app includes a teacher review screen.";
+      " Then treat this first version as a draft: work through it exactly like a student would, tell Claude precisely what to change, and iterate. Two or three quick rounds is completely normal, and it's how the good classroom apps get made. And check the actual questions and answers like the subject expert you are: Claude's content is mostly accurate but not always, especially in senior specialist subjects.";
     card.appendChild(tip);
 
     var tip2 = el("div", "tip");

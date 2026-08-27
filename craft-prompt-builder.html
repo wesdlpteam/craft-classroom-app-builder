@@ -68,6 +68,26 @@
   }
   .tab-pane[hidden] { display: none; }
 
+  /* Quiet corner link to the usage dashboard (DLP team only) */
+  .stats-link {
+    position: absolute;
+    top: 17px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: #A99BB3;
+    opacity: 0.5;
+  }
+  .stats-link:hover, .stats-link:focus-visible {
+    opacity: 1;
+    color: var(--board);
+    background: var(--board-tint);
+  }
+
   /* ---------- Header ---------- */
   header {
     background: var(--board-tint);
@@ -520,6 +540,10 @@
   <button class="tab-button" id="tab-button-builder" type="button" role="tab" aria-selected="true" aria-controls="tab-builder" data-tab-target="tab-builder">App Builder</button>
   <button class="tab-button" id="tab-button-primer" type="button" role="tab" aria-selected="false" aria-controls="tab-primer" data-tab-target="tab-primer" tabindex="-1">Working with Claude</button>
 </nav>
+
+<a class="stats-link" href="https://craft-app-builder.vercel.app/stats.html" target="_blank" rel="noopener" aria-label="Usage statistics (DLP team)" title="Usage stats">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="9" width="3" height="6" rx="1"/><rect x="6.5" y="5" width="3" height="10" rx="1"/><rect x="12" y="1" width="3" height="14" rx="1"/></svg>
+</a>
 
 <section class="tab-pane" id="tab-builder" role="tabpanel" aria-labelledby="tab-button-builder">
 <header>
